@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,6 +56,20 @@ func main() {
 		})
 	})
 
+	router.GET("/user/:user_id", func(c *gin.Context) {
+		userID := c.Param("user_id") // Get path param from URL
+
+		// Simulate fetching user data (you can replace this with DB logic)
+		user := gin.H{
+			"id":   userID,
+			"name": "User " + userID,
+		}
+
+		c.JSON(200, gin.H{
+			"data": user,
+		})
+	})
+
 	router.GET("/products", func(c *gin.Context) {
 		// products := []gin.H{
 		// 	{"id": 1, "name": "Laptop", "price": 1000},
@@ -70,6 +85,35 @@ func main() {
 
 		c.JSON(200, gin.H{
 			"data": products,
+		})
+	})
+
+	router.GET("/product/:product_name", func(c *gin.Context) {
+		productName := c.Param("product_name")
+
+		// Query parameters
+		priceStr := c.Query("price")
+		color := c.Query("color")
+
+		//Note: Query() always returns a string. You can convert it to an integer like this:
+		priceInt, err := strconv.Atoi(priceStr)
+		if err != nil {
+			// c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid price"})
+			// return
+
+			// Default value or error response if not a valid integer
+			priceInt = 0
+		}
+
+		product := gin.H{
+			"name":  productName,
+			"price": priceInt,
+			"color": color,
+			"stock": 20,
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": product,
 		})
 	})
 
