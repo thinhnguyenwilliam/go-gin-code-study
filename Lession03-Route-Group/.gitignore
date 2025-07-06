@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of the air live reload tool
+/tmp
+
+# Vendor dir (if not using Go modules)
+vendor/
+
+# Logs
+*.log
+
+# Dependency directories (Go Modules)
+/bin/
+/dist/
+/build/
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Air config file (optional, include if customized)
+#.air.toml
+
+
+main
+server
