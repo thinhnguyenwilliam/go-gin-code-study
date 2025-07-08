@@ -2,8 +2,11 @@ package v1handler
 
 import (
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type UserHandler struct{}
@@ -19,10 +22,60 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	})
 }
 
+var slugRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+func (h *UserHandler) GetUserBySlug(c *gin.Context) {
+	slug := c.Param("slug")
+
+	// Validate slug format
+	if !slugRegex.MatchString(slug) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid slug",
+			"message": "Slug must contain only lowercase letters, numbers, and hyphens",
+		})
+		return
+	}
+
+	// Continue with lookup logic
+	c.JSON(http.StatusOK, gin.H{
+		"type":    "Slug User",
+		"message": "User details for slug: " + slug,
+	})
+}
+
+func (h *UserHandler) GetUsersByUUID(c *gin.Context) {
+	id := c.Param("uuid")
+
+	// Validate UUID format
+	if _, err := uuid.Parse(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid UUID",
+			"message": "UUID must be in the correct format",
+		})
+		return
+	}
+
+	// Continue with logic (e.g., lookup from DB)
+	c.JSON(http.StatusOK, gin.H{
+		"ID":      id,
+		"type":    "UUID User",
+		"message": "User details for UUID " + id,
+	})
+}
+
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate id: check if it's a number and positive
+	userID, err := strconv.Atoi(id)
+	if err != nil || userID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "User details for ID " + id,
+		"User ID": userID,
+		"message": "User details for ID " + strconv.Itoa(userID),
 	})
 }
 
