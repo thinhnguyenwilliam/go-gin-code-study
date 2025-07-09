@@ -6,19 +6,31 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
 )
 
-type UserHandler struct{}
+type UserHandler struct {
+	validate *validator.Validate
+}
 
 func NewUserHandler() *UserHandler {
-	return &UserHandler{}
+	v := validator.New()
+	_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
+	return &UserHandler{validate: v}
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "List of all users (V1)",
 		"users":   []string{"Alice", "Bob", "Charlie"},
+	})
+}
+
+func (h *UserHandler) GetUserWithoutSlug(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"slug": "no news",
 	})
 }
 
