@@ -5,33 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	v1handler "github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/internal/api/v1/handler"
-	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
 )
-
-func GetProducts(c *gin.Context) {
-	search := c.Query("search")
-	limitStr := c.Query("limit")
-
-	// Validate search
-	if err := utils.ValidateSearch(search); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Validate limit
-	limit, err := utils.ValidateLimit(limitStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Continue with your product logic
-	c.JSON(http.StatusOK, gin.H{
-		"search":  search,
-		"limit":   limit,
-		"message": "Products fetched successfully.",
-	})
-}
 
 func GetProductByIdV1(c *gin.Context) {
 	id := c.Param("id")
@@ -91,6 +65,7 @@ const (
 func main() {
 	r := gin.Default()
 	userHandler := v1handler.NewUserHandler()
+	productHandler := v1handler.NewProductHandler()
 
 	// Group for version 1
 	v1 := r.Group("/api/v1")
@@ -99,7 +74,7 @@ func main() {
 		users := v1.Group("/users")
 		{
 			users.GET("", userHandler.GetUsers)
-			users.GET("/uuid/:uuid", userHandler.GetUsersByUUID)
+			users.GET("/uuid/:uuid", userHandler.GetUserByUUID)
 			users.GET("/slug", userHandler.GetUserWithoutSlug)
 			users.GET("/slug/:slug", userHandler.GetUserBySlug)
 			users.GET(userByIDRoute, userHandler.GetUserByID)
@@ -111,7 +86,7 @@ func main() {
 		// /api/v1/products group
 		products := v1.Group("/products")
 		{
-			products.GET("", GetProducts)
+			products.GET("", productHandler.GetProducts)
 			products.GET("/category/:lang", GetProductByLang)
 			products.GET(productByIDRoute, GetProductByIdV1)
 			products.POST("", PostProductV1)

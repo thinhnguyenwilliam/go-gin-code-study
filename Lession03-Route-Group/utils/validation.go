@@ -9,6 +9,45 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+func GetCustomErrorMessage(field, tag string) string {
+	switch field {
+	case "ID":
+		switch tag {
+		case "gt":
+			return "ID must be greater than 0"
+		}
+	case "Search":
+		switch tag {
+		case "required":
+			return "Search is required"
+		case "alphanumspace":
+			return "Search can only contain letters, numbers, and spaces"
+		}
+	case "UUID":
+		switch tag {
+		case "uuid4":
+			return "Invalid UUID format bro"
+		}
+
+	}
+	return "Invalid value"
+}
+
+// utils/validator.go
+func FormatValidationErrors(err error) map[string]string {
+	formatted := map[string]string{}
+
+	if ve, ok := err.(validator.ValidationErrors); ok {
+		for _, fe := range ve {
+			field := fe.Field()
+			tag := fe.Tag()
+			formatted[field] = GetCustomErrorMessage(field, tag)
+		}
+	}
+
+	return formatted
+}
+
 var alphaNumSpaceRegex = regexp.MustCompile(`^[a-zA-Z0-9 ]+$`)
 
 func AlphaNumSpace(fl validator.FieldLevel) bool {

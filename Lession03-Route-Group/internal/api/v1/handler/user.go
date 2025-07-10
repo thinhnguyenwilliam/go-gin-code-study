@@ -3,11 +3,10 @@ package v1handler
 import (
 	"net/http"
 	"regexp"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
+	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/dto"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
 )
 
@@ -19,6 +18,31 @@ func NewUserHandler() *UserHandler {
 	v := validator.New()
 	_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
 	return &UserHandler{validate: v}
+}
+
+func (h *UserHandler) GetUserByID(c *gin.Context) {
+	var uri dto.UserQuery
+
+	if err := c.ShouldBindUri(&uri); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":  "Validation failed",
+				"fields": utils.FormatValidationErrors(ve),
+			})
+			return
+		}
+		// Handle parse error (e.g. string instead of int)
+		//c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID must be a valid positive integer",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":      uri.ID,
+		"message": "User ID is valid",
+	})
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
@@ -55,39 +79,25 @@ func (h *UserHandler) GetUserBySlug(c *gin.Context) {
 	})
 }
 
-func (h *UserHandler) GetUsersByUUID(c *gin.Context) {
-	id := c.Param("uuid")
+func (h *UserHandler) GetUserByUUID(c *gin.Context) {
+	var uri dto.UserUUIDQuery
 
-	// Validate UUID format
-	if _, err := uuid.Parse(id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid UUID",
-			"message": "UUID must be in the correct format",
-		})
-		return
-	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":  "Validation failed",
+				"fields": utils.FormatValidationErrors(ve),
+			})
+			return
+		}
 
-	// Continue with logic (e.g., lookup from DB)
-	c.JSON(http.StatusOK, gin.H{
-		"ID":      id,
-		"type":    "UUID User",
-		"message": "User details for UUID " + id,
-	})
-}
-
-func (h *UserHandler) GetUserByID(c *gin.Context) {
-	id := c.Param("id")
-
-	// Validate id: check if it's a number and positive
-	userID, err := strconv.Atoi(id)
-	if err != nil || userID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid path parameter"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"User ID": userID,
-		"message": "User details for ID " + strconv.Itoa(userID),
+		"uuid":    uri.UUID,
+		"message": "Valid UUID",
 	})
 }
 
