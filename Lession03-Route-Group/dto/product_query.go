@@ -1,14 +1,12 @@
 package dto
 
-type UserUUIDQuery struct {
-	UUID string `uri:"uuid" binding:"uuid4"`
-}
-
-type UserQuery struct {
-	ID int `uri:"id" binding:"gt=0"`
-}
-
 type ProductQuery struct {
 	Search string `form:"search" validate:"required,min=3,max=50,alphanumspace"`
 	Limit  int    `form:"limit" validate:"omitempty,gt=0"`
+	Email  string `form:"email" binding:"omitempty,email"`
+	Date   string `form:"date" binding:"omitempty,datetime=2006-01-02"`
+}
+
+type ProductLangUri struct {
+	Lang string `uri:"lang" binding:"required,oneof=php golang python"`
 }

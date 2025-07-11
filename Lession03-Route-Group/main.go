@@ -34,29 +34,6 @@ func DeleteProductV1(c *gin.Context) {
 	})
 }
 
-func GetProductByLang(c *gin.Context) {
-	lang := c.Param("lang")
-
-	allowed := map[string]bool{
-		"php":    true,
-		"golang": true,
-		"python": true,
-	}
-
-	if !allowed[lang] {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid language",
-			"message": "Allowed values are: php, golang, python",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"language": lang,
-		"message":  "Products filtered by language: " + lang,
-	})
-}
-
 const (
 	userByIDRoute    = "/:id"
 	productByIDRoute = "/:id"
@@ -87,7 +64,7 @@ func main() {
 		products := v1.Group("/products")
 		{
 			products.GET("", productHandler.GetProducts)
-			products.GET("/category/:lang", GetProductByLang)
+			products.GET("/category/:lang", productHandler.GetProductByLang)
 			products.GET(productByIDRoute, GetProductByIdV1)
 			products.POST("", PostProductV1)
 			products.PUT(productByIDRoute, PutProductV1)

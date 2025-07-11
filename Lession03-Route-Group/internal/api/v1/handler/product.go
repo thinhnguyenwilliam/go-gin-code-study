@@ -19,26 +19,55 @@ func NewProductHandler() *ProductHandler {
 	return &ProductHandler{validate: v}
 }
 
-func (h *ProductHandler) GetProducts(c *gin.Context) {
-	var query dto.ProductQuery
+func (h *ProductHandler) GetProductByLang(c *gin.Context) {
+	var uri dto.ProductLangUri
 
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters"})
-		return
-	}
-
-	if query.Limit == 0 {
-		query.Limit = 10
-	}
-
-	if err := h.validate.Struct(query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindUri(&uri); err != nil {
+		// Handle validation error
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "Validation failed",
+			"fields": utils.FormatValidationErrors(err),
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"language": uri.Lang,
+		"message":  "Products filtered by language: " + uri.Lang,
+	})
+}
+
+func (h *ProductHandler) GetProducts(c *gin.Context) {
+	var query dto.ProductQuery
+
+	// Bind query params
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "Invalid query parameters",
+			"fields": utils.FormatValidationErrors(err),
+		})
+		return
+	}
+
+	// Default value for limit
+	if query.Limit == 0 {
+		query.Limit = 10
+	}
+
+	// Re-validate using custom validator (e.g., alphanumspace, min/max)
+	if err := h.validate.Struct(query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "Validation failed",
+			"fields": utils.FormatValidationErrors(err),
+		})
+		return
+	}
+
+	// Success
+	c.JSON(http.StatusOK, gin.H{
 		"search":  query.Search,
 		"limit":   query.Limit,
 		"message": "Success",
+		"email":   query.Email,
 	})
 }

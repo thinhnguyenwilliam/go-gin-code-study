@@ -2,9 +2,9 @@ package v1handler
 
 import (
 	"net/http"
-	"regexp"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/dto"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
@@ -16,7 +16,11 @@ type UserHandler struct {
 
 func NewUserHandler() *UserHandler {
 	v := validator.New()
-	_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
+		_ = v.RegisterValidation("slug", utils.ValidateSlug)
+	}
+
 	return &UserHandler{validate: v}
 }
 
@@ -58,24 +62,24 @@ func (h *UserHandler) GetUserWithoutSlug(c *gin.Context) {
 	})
 }
 
-var slugRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-
 func (h *UserHandler) GetUserBySlug(c *gin.Context) {
-	slug := c.Param("slug")
+	var uri dto.UserSlugQuery
 
-	// Validate slug format
-	if !slugRegex.MatchString(slug) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid slug",
-			"message": "Slug must contain only lowercase letters, numbers, and hyphens",
-		})
+	if err := c.ShouldBindUri(&uri); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":  "Validation failed",
+				"fields": utils.FormatValidationErrors(ve),
+			})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Continue with lookup logic
 	c.JSON(http.StatusOK, gin.H{
 		"type":    "Slug User",
-		"message": "User details for slug: " + slug,
+		"message": "User details for slug: " + uri.Slug,
 	})
 }
 
