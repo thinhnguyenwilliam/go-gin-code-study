@@ -14,12 +14,6 @@ func GetProductByIdV1(c *gin.Context) {
 	})
 }
 
-func PostProductV1(c *gin.Context) {
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "New product created",
-	})
-}
-
 func PutProductV1(c *gin.Context) {
 	id := c.Param("id")
 	c.JSON(http.StatusOK, gin.H{
@@ -66,7 +60,7 @@ func main() {
 			products.GET("", productHandler.GetProducts)
 			products.GET("/category/:lang", productHandler.GetProductByLang)
 			products.GET(productByIDRoute, GetProductByIdV1)
-			products.POST("", PostProductV1)
+			products.POST("", productHandler.CreateProduct)
 			products.PUT(productByIDRoute, PutProductV1)
 			products.DELETE(productByIDRoute, DeleteProductV1)
 		}

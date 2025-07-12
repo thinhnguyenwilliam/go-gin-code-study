@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,53 +17,57 @@ func ValidateSlug(fl validator.FieldLevel) bool {
 	return slugRegex.MatchString(fl.Field().String())
 }
 
-func GetCustomErrorMessage(field, tag string, fe validator.FieldError) string {
-	switch field {
-	case "Lang":
-		switch tag {
-		case "required":
-			return "Language is required"
-		case "oneof":
-			return fmt.Sprintf("Language must be one of: %s", fe.Param())
-		}
-	case "Slug":
-		switch tag {
-		case "required":
-			return "Slug is required"
-		case "min":
-			return fmt.Sprintf("%s must be at least %s characters", field, fe.Param())
-		case "max":
-			return fmt.Sprintf("%s must be at most %s characters", field, fe.Param())
-		case "slug":
-			return "Slug can only contain lowercase letters, numbers, and hyphens"
-		}
-
-	case "ID":
-		switch tag {
-		case "gt":
-			return "ID must be greater than 0"
-		}
-	case "Search":
-		switch tag {
-		case "required":
-			return "Search is required"
-		case "alphanumspace":
-			return "Search can only contain letters, numbers, and spaces"
-		case "min":
-			return fmt.Sprintf("Search must be at least %s characters", fe.Param())
-		case "max":
-			return fmt.Sprintf("Search must be at most %s characters", fe.Param())
-		case "email":
-			return "Email must be a valid email address"
-		}
-	case "UUID":
-		switch tag {
-		case "uuid4":
-			return "Invalid UUID format bro"
-		}
-
-	}
-	return fmt.Sprintf("Invalid value for %s", field)
+// This is a nested map (map of maps)
+// msg := staticMessages["Name"]["required"]
+// fmt.Println(msg) // Output: Name is required
+var staticMessages = map[string]map[string]string{
+	"URL": {
+		"required": "URL is required bro",
+	},
+	"Name": {
+		"required": "Name is required",
+		"min":      "Name Product must be at least 3 characters",
+		"max":      "Name must be at most 100 characters",
+	},
+	"Email": {
+		"email": "Email must be a valid email address",
+	},
+	"Price": {
+		"gt": "Price must be greater than 0",
+	},
+	"Stock": {
+		"gte": "Stock must be greater than or equal to 0",
+	},
+	"Lang": {
+		"required": "Language is required",
+	},
+	"Slug": {
+		"required": "Slug is required",
+		"slug":     "Slug can only contain lowercase letters, numbers, and hyphens",
+	},
+	"ID": {
+		"gt": "ID must be greater than 0",
+	},
+	"Search": {
+		"required":      "Search is required",
+		"alphanumspace": "Search can only contain letters, numbers, and spaces",
+	},
+	"UUID": {
+		"uuid4": "Invalid UUID format bro",
+	},
+}
+var formattedMessages = map[string]map[string]string{
+	"Slug": {
+		"min": "%s must be at least %s characters",
+		"max": "%s must be at most %s characters",
+	},
+	"Search": {
+		"min": "Search must be at least %s characters",
+		"max": "Search must be at most %s characters",
+	},
+	"Lang": {
+		"oneof": "Language must be one of: %s",
+	},
 }
 
 // utils/validator.go
@@ -78,6 +83,27 @@ func FormatValidationErrors(err error) map[string]string {
 	}
 
 	return formatted
+}
+func GetCustomErrorMessage(field, tag string, fe validator.FieldError) string {
+	log.Printf("[Validation] Field: %s | Tag: %s | Param: %s", field, tag, fe.Param())
+	if msg, ok := staticMessages[field][tag]; ok {
+		log.Printf("[Validation] Message returned: %s", msg)
+		return msg
+	}
+
+	if format, ok := formattedMessages[field][tag]; ok {
+		switch tag {
+		case "min", "max":
+			if strings.Contains(format, "%s must") {
+				return fmt.Sprintf(format, field, fe.Param())
+			}
+			return fmt.Sprintf(format, fe.Param())
+		case "oneof":
+			return fmt.Sprintf(format, fe.Param())
+		}
+	}
+
+	return fmt.Sprintf("Invalid value for %s", field)
 }
 
 var alphaNumSpaceRegex = regexp.MustCompile(`^[a-zA-Z0-9 ]+$`)

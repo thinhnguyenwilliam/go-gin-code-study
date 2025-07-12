@@ -10,3 +10,18 @@ type ProductQuery struct {
 type ProductLangUri struct {
 	Lang string `uri:"lang" binding:"required,oneof=php golang python"`
 }
+
+type ProductImage struct {
+	URL string `json:"url" binding:"required,url"`
+}
+
+type CreateProductRequest struct {
+	ProductImage
+	Display     *bool   `json:"display" binding:"omitempty"` //By changing Display to a pointer (*bool), you can detect if it was omitted:
+	Name        string  `json:"name" binding:"required,min=3,max=100"`
+	Description string  `json:"description" binding:"omitempty,max=500"`
+	Price       float64 `json:"price" binding:"required,gt=0"`
+	Stock       int     `json:"stock" binding:"required,gte=0"`
+	Email       string  `json:"email" binding:"omitempty,email"`
+	CreatedAt   string  `json:"created_at,omitempty"` // return to client, but not accepted from client
+}
