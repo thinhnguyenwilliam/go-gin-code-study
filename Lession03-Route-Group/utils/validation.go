@@ -11,6 +11,25 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// Accept only .jpg, .jpeg, .png
+func ValidateImageExtension(fl validator.FieldLevel) bool {
+	url := fl.Field().String()
+
+	log.Printf("[Validation] Checking image URL: %s", url)
+
+	allowedExtensions := []string{".jpg", ".jpeg", ".png"}
+
+	for _, ext := range allowedExtensions {
+		if strings.HasSuffix(strings.ToLower(url), ext) {
+			log.Printf("[Validation] Passed for extension: %s", ext)
+			return true
+		}
+	}
+
+	log.Println("[Validation] Failed: unsupported image extension")
+	return false
+}
+
 var slugRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
 func ValidateSlug(fl validator.FieldLevel) bool {
@@ -23,6 +42,7 @@ func ValidateSlug(fl validator.FieldLevel) bool {
 var staticMessages = map[string]map[string]string{
 	"URL": {
 		"required": "URL is required bro",
+		"imgext":   "Image URL must end with .jpg, .jpeg, or .png",
 	},
 	"Name": {
 		"required": "Name is required",
@@ -57,6 +77,9 @@ var staticMessages = map[string]map[string]string{
 	},
 }
 var formattedMessages = map[string]map[string]string{
+	"Price": {
+		"lte": "Price must be less than or equal to %s",
+	},
 	"Slug": {
 		"min": "%s must be at least %s characters",
 		"max": "%s must be at most %s characters",

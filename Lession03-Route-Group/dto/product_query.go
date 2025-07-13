@@ -12,16 +12,17 @@ type ProductLangUri struct {
 }
 
 type ProductImage struct {
-	URL string `json:"url" binding:"required,url"`
+	URL     string `json:"url" binding:"required,url,imgext"`
+	AltText string `json:"alt_text" binding:"omitempty,max=100"`
 }
 
 type CreateProductRequest struct {
-	ProductImage
-	Display     *bool   `json:"display" binding:"omitempty"` //By changing Display to a pointer (*bool), you can detect if it was omitted:
-	Name        string  `json:"name" binding:"required,min=3,max=100"`
-	Description string  `json:"description" binding:"omitempty,max=500"`
-	Price       float64 `json:"price" binding:"required,gt=0"`
-	Stock       int     `json:"stock" binding:"required,gte=0"`
-	Email       string  `json:"email" binding:"omitempty,email"`
-	CreatedAt   string  `json:"created_at,omitempty"` // return to client, but not accepted from client
+	Image       []ProductImage `json:"image" binding:"required,dive"` // important
+	Display     *bool          `json:"display" binding:"omitempty"`   //By changing Display to a pointer (*bool), you can detect if it was omitted:
+	Name        string         `json:"name" binding:"required,min=3,max=100"`
+	Description string         `json:"description" binding:"omitempty,max=500"`
+	Price       float64        `json:"price" binding:"required,gt=0,lte=100"`
+	Stock       int            `json:"stock" binding:"required,gte=0"`
+	Email       string         `json:"email" binding:"omitempty,email"`
+	CreatedAt   string         `json:"created_at,omitempty"` // return to client, but not accepted from client
 }

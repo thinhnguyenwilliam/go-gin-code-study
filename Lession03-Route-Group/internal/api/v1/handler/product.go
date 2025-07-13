@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/dto"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
@@ -19,7 +20,10 @@ type ProductHandler struct {
 
 func NewProductHandler() *ProductHandler {
 	v := validator.New()
-	_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		_ = v.RegisterValidation("alphanumspace", utils.AlphaNumSpace)
+		_ = v.RegisterValidation("imgext", utils.ValidateImageExtension)
+	}
 	return &ProductHandler{validate: v}
 }
 
