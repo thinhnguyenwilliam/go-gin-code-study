@@ -37,6 +37,7 @@ func main() {
 	r := gin.Default()
 	userHandler := v1handler.NewUserHandler()
 	productHandler := v1handler.NewProductHandler()
+	categoryHandler := v1handler.NewCategoryHandler()
 
 	// Group for version 1
 	v1 := r.Group("/api/v1")
@@ -63,6 +64,12 @@ func main() {
 			products.POST("", productHandler.CreateProduct)
 			products.PUT(productByIDRoute, PutProductV1)
 			products.DELETE(productByIDRoute, DeleteProductV1)
+		}
+
+		categories := v1.Group("/categories")
+		{
+			categories.POST("", categoryHandler.CreateCategory)
+			categories.POST("/upload", categoryHandler.UploadCategoryImage)
 		}
 	}
 

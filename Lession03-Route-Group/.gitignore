@@ -13,6 +13,8 @@
 # Vendor dir (if not using Go modules)
 vendor/
 
+uploads/
+
 # Logs
 *.log
 
