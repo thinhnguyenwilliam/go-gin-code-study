@@ -99,14 +99,22 @@ func FormatValidationErrors(err error) map[string]string {
 
 	if ve, ok := err.(validator.ValidationErrors); ok {
 		for _, fe := range ve {
-			field := fe.Field()
-			tag := fe.Tag()
-			formatted[strings.ToLower(field)] = GetCustomErrorMessage(field, tag, fe)
+			// Namespace: CreateProductRequest.Image[2].URL
+			// StructNamespace: CreateProductRequest.Image[2]
+			// We want: Image[2].URL
+			ns := fe.Namespace()
+			root := strings.Split(ns, ".")
+			if len(root) > 1 {
+				formatted[strings.Join(root[1:], ".")] = GetCustomErrorMessage(fe.Field(), fe.Tag(), fe)
+			} else {
+				formatted[fe.Field()] = GetCustomErrorMessage(fe.Field(), fe.Tag(), fe)
+			}
 		}
 	}
 
 	return formatted
 }
+
 func GetCustomErrorMessage(field, tag string, fe validator.FieldError) string {
 	log.Printf("[Validation] Field: %s | Tag: %s | Param: %s", field, tag, fe.Param())
 	if msg, ok := staticMessages[field][tag]; ok {

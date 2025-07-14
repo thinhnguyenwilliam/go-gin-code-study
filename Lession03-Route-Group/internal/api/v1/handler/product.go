@@ -2,6 +2,8 @@ package v1handler
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/dto"
 	"github.com/thinhnguyen-com/CodeWithTuan/Lession03-Route-Group/utils"
 )
@@ -26,7 +29,10 @@ func NewProductHandler() *ProductHandler {
 	}
 	return &ProductHandler{validate: v}
 }
-
+func isUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
+}
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	log.Printf("🔍 Request: %s %s from %s", c.Request.Method, c.FullPath(), c.ClientIP())
 	log.Printf("📦 Content-Type: %s", c.ContentType())
@@ -38,11 +44,31 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var req dto.CreateProductRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":  "Validation failed",
-			"fields": utils.FormatValidationErrors(err),
-		})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":  "Validation failed",
+				"fields": utils.FormatValidationErrors(ve),
+			})
+		} else {
+			// Not a validation error — probably a binding type mismatch
+			log.Println("❌ JSON Bind Error:", err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid request format",
+				"msg":   err.Error(), // Show the actual error for debugging
+			})
+		}
 		return
+	}
+
+	// ✅ Manual validation for map keys
+	for key := range req.ProductInfo {
+		if !isUUID(key) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("product_info key '%s' is not a valid UUID", key),
+			})
+			return
+		}
 	}
 
 	// ✅ Set default if field is not provided (still false)
