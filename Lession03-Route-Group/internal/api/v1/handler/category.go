@@ -1,6 +1,7 @@
 package v1handler
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -54,8 +55,18 @@ func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {
 		return
 	}
 
+	// ✅ Validate file size (max 2MB = 2 * 1024 * 1024 bytes)
+	// 5 << 20 for 5MB
+	const maxSize = 2 << 20 // 2MB
+	if file.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("File is too large (%.2f MB). Max allowed is 2MB", float64(file.Size)/(1024*1024)),
+		})
+		return
+	}
+
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".mp4": true}
 	if !allowed[ext] {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Unsupported file type. Allowed: jpg, jpeg, png",
@@ -83,6 +94,7 @@ func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {
 		"source":      query.Source,
 		"file":        file.Filename,
 		"path":        dst,
+		"size":        fmt.Sprintf("%.2f KB", float64(file.Size)/1024),
 	})
 }
 
