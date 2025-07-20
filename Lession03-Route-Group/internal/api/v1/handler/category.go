@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -49,28 +48,35 @@ func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {
 	}
 
 	// File validation
-	file, err := c.FormFile("image")
+	fileHeader, err := c.FormFile("image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file is required"})
 		return
 	}
 
-	// ✅ Validate file size (max 2MB = 2 * 1024 * 1024 bytes)
-	// 5 << 20 for 5MB
-	const maxSize = 2 << 20 // 2MB
-	if file.Size > maxSize {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("File is too large (%.2f MB). Max allowed is 2MB", float64(file.Size)/(1024*1024)),
-		})
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot open uploaded file"})
+		return
+	}
+	defer file.Close()
+
+	// ✅ Check file extension
+	if err := utils.ValidateFileExtension(fileHeader.Filename, utils.AllowedExtensions); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".mp4": true}
-	if !allowed[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Unsupported file type. Allowed: jpg, jpeg, png",
-		})
+	// ✅ Check MIME content
+	if err := utils.ValidateImageMIME(file); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ✅ Check file size
+	const maxSize = 2 << 20 // 2MB
+	if err := utils.ValidateFileSize(fileHeader.Size, maxSize); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -80,8 +86,11 @@ func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {
 		return
 	}
 
-	dst := filepath.Join(uploadPath, file.Filename)
-	if err := c.SaveUploadedFile(file, dst); err != nil {
+	// ✅ Generate UUID file name
+	newFileName := utils.GenerateUUIDFileName(fileHeader.Filename)
+	dst := filepath.Join(uploadPath, newFileName)
+
+	if err := c.SaveUploadedFile(fileHeader, dst); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
@@ -92,9 +101,9 @@ func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {
 		"description": form.Description,
 		"user_id":     query.UserID,
 		"source":      query.Source,
-		"file":        file.Filename,
+		"file":        newFileName,
 		"path":        dst,
-		"size":        fmt.Sprintf("%.2f KB", float64(file.Size)/1024),
+		"size":        fmt.Sprintf("%.2f KB", float64(fileHeader.Size)/1024),
 	})
 }
 
