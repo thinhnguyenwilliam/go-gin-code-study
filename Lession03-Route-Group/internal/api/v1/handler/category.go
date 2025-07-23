@@ -2,6 +2,8 @@ package v1handler
 
 import (
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,6 +26,109 @@ func NewCategoryHandler() *CategoryHandler {
 		_ = v.RegisterValidation("imgext", utils.ValidateImageExtension)
 	}
 	return &CategoryHandler{validate: v}
+}
+
+func (h *CategoryHandler) UploadMultipleCategoryImages(c *gin.Context) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse multipart form"})
+		return
+	}
+
+	files := form.File["images"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No files uploaded"})
+		return
+	}
+
+	const maxImages = 5
+	if len(files) > maxImages {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Maximum %d images are allowed", maxImages),
+		})
+		return
+	}
+
+	uploadPath := "uploads/categories"
+	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	var uploadedFiles []string
+	var failedFiles []map[string]string
+
+	for _, fileHeader := range files {
+		fileName, err := validateAndSaveImage(fileHeader, uploadPath)
+		if err != nil {
+			failedFiles = append(failedFiles, map[string]string{
+				"file":  fileHeader.Filename,
+				"error": err.Error(),
+			})
+			continue
+		}
+		uploadedFiles = append(uploadedFiles, fileName)
+	}
+
+	if len(uploadedFiles) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "No valid images uploaded",
+			"failed": failedFiles,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Some or all files uploaded successfully",
+		"files":   uploadedFiles,
+		"failed":  failedFiles,
+	})
+}
+
+func validateAndSaveImage(fileHeader *multipart.FileHeader, uploadPath string) (string, error) {
+	const maxSize = 2 << 20 // 2MB
+
+	if fileHeader.Size > maxSize {
+		return "", fmt.Errorf("file too large")
+	}
+
+	if err := utils.ValidateFileExtension(fileHeader.Filename, utils.AllowedExtensions); err != nil {
+		return "", err
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	if err := utils.ValidateImageMIME(file); err != nil {
+		return "", err
+	}
+
+	// Reset the reader
+	_, _ = file.Seek(0, 0)
+
+	newName := utils.GenerateUUIDFileName(fileHeader.Filename)
+	dst := filepath.Join(uploadPath, newName)
+
+	if err := saveFile(fileHeader, dst); err != nil {
+		return "", err
+	}
+
+	return newName, nil
+}
+
+func saveFile(fileHeader *multipart.FileHeader, dst string) error {
+	return os.WriteFile(dst, getFileBytes(fileHeader), os.ModePerm)
+}
+
+// Optional helper to read bytes (or reuse gin's SaveUploadedFile if preferred)
+func getFileBytes(fileHeader *multipart.FileHeader) []byte {
+	file, _ := fileHeader.Open()
+	defer file.Close()
+	content, _ := io.ReadAll(file)
+	return content
 }
 
 func (h *CategoryHandler) UploadCategoryImage(c *gin.Context) {

@@ -70,6 +70,7 @@ func main() {
 		{
 			categories.POST("", categoryHandler.CreateCategory)
 			categories.POST("/upload", categoryHandler.UploadCategoryImage)
+			categories.POST("/upload-multiple", categoryHandler.UploadMultipleCategoryImages)
 		}
 	}
 
