@@ -78,10 +78,16 @@ func (h *CategoryHandler) UploadMultipleCategoryImages(c *gin.Context) {
 		return
 	}
 
+	var uploadedURLs []string
+	for _, name := range uploadedFiles {
+		uploadedURLs = append(uploadedURLs, fmt.Sprintf("/static/categories/%s", name))
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Some or all files uploaded successfully",
-		"files":   uploadedFiles,
-		"failed":  failedFiles,
+		//"files":   uploadedFiles,
+		"files":  uploadedURLs,
+		"failed": failedFiles,
 	})
 }
 

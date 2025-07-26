@@ -39,6 +39,9 @@ func main() {
 	productHandler := v1handler.NewProductHandler()
 	categoryHandler := v1handler.NewCategoryHandler()
 
+	// Serve files from "uploads" folder under /static/ path
+	r.Static("/api/static/categories", "./uploads/categories")
+
 	// Group for version 1
 	v1 := r.Group("/api/v1")
 	{
